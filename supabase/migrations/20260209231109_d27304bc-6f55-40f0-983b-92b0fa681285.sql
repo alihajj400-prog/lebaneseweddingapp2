@@ -1,0 +1,1 @@
+ALTER TABLE public.vendors DROP CONSTRAINT vendors_user_id_key;
