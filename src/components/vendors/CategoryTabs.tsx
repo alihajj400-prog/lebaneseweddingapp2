@@ -55,7 +55,7 @@ export function CategoryTabs({ selectedCategory, onCategoryChange }: CategoryTab
   ];
 
   return (
-    <div className="sticky top-16 z-30 bg-background/95 backdrop-blur-sm border-b border-border py-3">
+    <div className="sticky top-16 lg:top-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border py-3 -mx-4 px-4 md:-mx-0 md:px-0">
       <div 
         ref={scrollRef}
         className="flex gap-2 overflow-x-auto scrollbar-hide px-4 -mx-4 md:px-0 md:mx-0"

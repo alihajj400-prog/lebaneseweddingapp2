@@ -60,11 +60,12 @@ const defaultForm: FormState = {
 };
 
 export default function AdminVendorEditorPage() {
-  const { id } = useParams<{ id: string }>();
+  const { id } = useParams<{ id?: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
-  const isNew = id === 'new';
+  // /admin/vendors/new has no :id param; /admin/vendors/:id/edit has id
+  const isNew = id == null || id === 'new';
   const [form, setForm] = useState<FormState>(defaultForm);
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
