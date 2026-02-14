@@ -13,7 +13,8 @@
     "test:watch": "vitest",
     "db:link": "supabase link",
     "db:push": "supabase db push",
-    "db:reset": "supabase db reset"
+    "db:reset": "supabase db reset",
+    "seed:vendors": "node scripts/seed-vendors.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.0.2",
