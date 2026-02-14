@@ -98,8 +98,10 @@ export default function AuthPage() {
           }
           toast({
             title: 'Account created!',
-            description: 'Welcome! You are now signed in.',
+            description: 'Welcome! Taking you to your dashboard.',
           });
+          // Redirect so they're logged in (works when Supabase "Confirm email" is off)
+          navigate('/dashboard');
         }
       } else {
         const validation = signInSchema.safeParse(formData);

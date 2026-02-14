@@ -42,9 +42,9 @@ import VendorSubscriptionPage from "./pages/vendor/VendorSubscriptionPage";
 // Admin Pages
 import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
 import AdminVendorsPage from "./pages/admin/AdminVendorsPage";
+import AdminVendorEditorPage from "./pages/admin/AdminVendorEditorPage";
 import AdminUsersPage from "./pages/admin/AdminUsersPage";
 import AdminSettingsPage from "./pages/admin/AdminSettingsPage";
-import AdminVendorImportPage from "./pages/admin/AdminVendorImportPage";
 
 const queryClient = new QueryClient();
 
@@ -205,8 +205,9 @@ const AppRoutes = () => (
     {/* Protected Admin Routes */}
     <Route path="/admin" element={<AdminRoute><AdminDashboardPage /></AdminRoute>} />
     <Route path="/admin/vendors" element={<AdminRoute><AdminVendorsPage /></AdminRoute>} />
+    <Route path="/admin/vendors/new" element={<AdminRoute><AdminVendorEditorPage /></AdminRoute>} />
+    <Route path="/admin/vendors/:id/edit" element={<AdminRoute><AdminVendorEditorPage /></AdminRoute>} />
     <Route path="/admin/users" element={<AdminRoute><AdminUsersPage /></AdminRoute>} />
-    <Route path="/admin/vendor-import" element={<AdminRoute><AdminVendorImportPage /></AdminRoute>} />
     <Route path="/admin/settings" element={<AdminRoute><AdminSettingsPage /></AdminRoute>} />
     
     <Route path="*" element={<NotFound />} />

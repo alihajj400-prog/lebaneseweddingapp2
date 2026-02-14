@@ -1,4 +1,4 @@
-import { LayoutDashboard, Store, Users, Settings, LogOut, Upload } from 'lucide-react';
+import { LayoutDashboard, Store, Users, Settings, LogOut } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -19,7 +19,6 @@ import {
 const menuItems = [
   { title: 'Dashboard', url: '/admin', icon: LayoutDashboard },
   { title: 'Vendors', url: '/admin/vendors', icon: Store },
-  { title: 'Import Vendors', url: '/admin/vendor-import', icon: Upload },
   { title: 'Users', url: '/admin/users', icon: Users },
   { title: 'Settings', url: '/admin/settings', icon: Settings },
 ];

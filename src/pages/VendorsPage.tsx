@@ -112,7 +112,8 @@ export default function VendorsPage() {
       .from('vendors')
       .select('*')
       .eq('status', 'approved')
-      .order('shortlist_count', { ascending: false });
+      .order('shortlist_count', { ascending: false })
+      .range(0, 999); // request up to 1000 so all vendors show (Supabase default can vary by project)
 
     if (categoryFilter !== 'all') {
       query = query.eq('category', categoryFilter as any);
