@@ -129,6 +129,8 @@ export default function ChecklistPage() {
     if (!error && data) {
       setItems(data);
       toast({ title: 'Checklist ready!', description: 'Your wedding timeline is set.' });
+    } else if (error) {
+      toast({ title: 'Could not create checklist', variant: 'destructive' });
     }
   };
 

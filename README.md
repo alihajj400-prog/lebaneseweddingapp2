@@ -37,7 +37,7 @@ A comprehensive wedding planning platform designed exclusively for Lebanese coup
 | **Frontend** | React 18, TypeScript, Vite |
 | **Styling** | Tailwind CSS, shadcn/ui |
 | **Animation** | Framer Motion |
-| **Backend** | Supabase (Lovable Cloud) |
+| **Backend** | Supabase |
 | **Auth** | Supabase Auth |
 | **Database** | PostgreSQL (via Supabase) |
 | **Storage** | Supabase Storage |
@@ -107,9 +107,32 @@ npm run dev
 
 ### Environment Variables
 
-The project uses Lovable Cloud (Supabase) which auto-configures the following:
-- `VITE_SUPABASE_URL`
-- `VITE_SUPABASE_PUBLISHABLE_KEY`
+Create a `.env` file in the project root (see `.env.example`). Required variables:
+
+- **`VITE_SUPABASE_URL`** – Your Supabase project URL (Dashboard → Settings → API)
+- **`VITE_SUPABASE_PUBLISHABLE_KEY`** – Your Supabase anon/public key (Dashboard → Settings → API)
+
+The app talks directly to your Supabase project for auth, database, and storage.
+
+### Supabase Setup (Required)
+
+1. **Create a project** at [supabase.com](https://supabase.com) → New project.
+2. **Run the database migrations** (choose one):
+   - **From terminal (recommended):** This project includes the Supabase CLI as a dev dependency. Run:
+     ```bash
+     npm install
+     npx supabase login
+     npm run db:link
+     npm run db:push
+     ```
+     `db:link` connects this repo to your Supabase project (you’ll pick it or enter the project ref). `db:push` applies all migrations in `supabase/migrations/`. (Do not use `npm install -g supabase`; the CLI is not supported as a global install.)
+   - **Manually:** In the Supabase Dashboard → **SQL Editor**, run each file in `supabase/migrations/` in order (oldest filename first).
+3. **Create the storage bucket**  
+   **Storage** → New bucket → name: `vendor-files` → set to **Public**.
+4. **Auth (optional)**  
+   For Google sign-in: **Authentication** → **Providers** → **Google** → enable and add your OAuth client ID/secret from Google Cloud Console.
+5. **Copy credentials**  
+   **Settings** → **API** → copy **Project URL** and **anon public** key into your `.env`.
 
 ## 📱 Mobile Development
 
@@ -177,13 +200,6 @@ npx cap run android
    ```
    /*    /index.html   200
    ```
-
-### Supabase Setup (if not using Lovable Cloud)
-
-1. Create a new project at [supabase.com](https://supabase.com)
-2. Run migrations from `supabase/migrations/` folder
-3. Create storage bucket: `vendor-files` (public)
-4. Copy URL and anon key to environment variables
 
 ## 🔐 Security
 

@@ -1,13 +1,31 @@
--- Create enums for user roles, vendor categories, and Lebanese regions
-CREATE TYPE public.user_role AS ENUM ('couple', 'vendor', 'admin');
-CREATE TYPE public.vendor_category AS ENUM ('venue', 'photographer', 'dj', 'zaffe', 'bridal_dress', 'makeup_artist', 'flowers', 'car_rental', 'catering', 'wedding_planner', 'videographer', 'jewelry', 'invitations', 'cake', 'entertainment', 'other');
-CREATE TYPE public.lebanese_region AS ENUM ('beirut', 'mount_lebanon', 'north', 'south', 'bekaa', 'nabatieh');
-CREATE TYPE public.rsvp_status AS ENUM ('pending', 'confirmed', 'declined', 'maybe');
-CREATE TYPE public.guest_group AS ENUM ('family', 'friends', 'coworkers', 'other');
-CREATE TYPE public.vendor_status AS ENUM ('pending', 'approved', 'rejected');
+-- Create enums for user roles, vendor categories, and Lebanese regions (idempotent)
+DO $$ BEGIN
+  CREATE TYPE public.user_role AS ENUM ('couple', 'vendor', 'admin');
+EXCEPTION WHEN duplicate_object THEN null;
+END $$;
+DO $$ BEGIN
+  CREATE TYPE public.vendor_category AS ENUM ('venue', 'photographer', 'dj', 'zaffe', 'bridal_dress', 'makeup_artist', 'flowers', 'car_rental', 'catering', 'wedding_planner', 'videographer', 'jewelry', 'invitations', 'cake', 'entertainment', 'other');
+EXCEPTION WHEN duplicate_object THEN null;
+END $$;
+DO $$ BEGIN
+  CREATE TYPE public.lebanese_region AS ENUM ('beirut', 'mount_lebanon', 'north', 'south', 'bekaa', 'nabatieh');
+EXCEPTION WHEN duplicate_object THEN null;
+END $$;
+DO $$ BEGIN
+  CREATE TYPE public.rsvp_status AS ENUM ('pending', 'confirmed', 'declined', 'maybe');
+EXCEPTION WHEN duplicate_object THEN null;
+END $$;
+DO $$ BEGIN
+  CREATE TYPE public.guest_group AS ENUM ('family', 'friends', 'coworkers', 'other');
+EXCEPTION WHEN duplicate_object THEN null;
+END $$;
+DO $$ BEGIN
+  CREATE TYPE public.vendor_status AS ENUM ('pending', 'approved', 'rejected');
+EXCEPTION WHEN duplicate_object THEN null;
+END $$;
 
 -- Profiles table for all users
-CREATE TABLE public.profiles (
+CREATE TABLE IF NOT EXISTS public.profiles (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL UNIQUE,
   role user_role NOT NULL DEFAULT 'couple',
@@ -21,7 +39,7 @@ CREATE TABLE public.profiles (
 );
 
 -- Vendors table
-CREATE TABLE public.vendors (
+CREATE TABLE IF NOT EXISTS public.vendors (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL UNIQUE,
   business_name TEXT NOT NULL,
@@ -43,7 +61,7 @@ CREATE TABLE public.vendors (
 );
 
 -- Checklist table for wedding tasks
-CREATE TABLE public.checklist_items (
+CREATE TABLE IF NOT EXISTS public.checklist_items (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
   title TEXT NOT NULL,
@@ -58,7 +76,7 @@ CREATE TABLE public.checklist_items (
 );
 
 -- Budget categories table
-CREATE TABLE public.budget_categories (
+CREATE TABLE IF NOT EXISTS public.budget_categories (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
   name TEXT NOT NULL,
@@ -72,7 +90,7 @@ CREATE TABLE public.budget_categories (
 );
 
 -- Guests table
-CREATE TABLE public.guests (
+CREATE TABLE IF NOT EXISTS public.guests (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
   name TEXT NOT NULL,
@@ -89,7 +107,7 @@ CREATE TABLE public.guests (
 );
 
 -- Shortlist table for saving vendors
-CREATE TABLE public.shortlist (
+CREATE TABLE IF NOT EXISTS public.shortlist (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
   vendor_id UUID REFERENCES public.vendors(id) ON DELETE CASCADE NOT NULL,
@@ -107,40 +125,61 @@ ALTER TABLE public.guests ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.shortlist ENABLE ROW LEVEL SECURITY;
 
 -- Profiles policies
+DROP POLICY IF EXISTS "Users can view their own profile" ON public.profiles;
 CREATE POLICY "Users can view their own profile" ON public.profiles FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can update their own profile" ON public.profiles;
 CREATE POLICY "Users can update their own profile" ON public.profiles FOR UPDATE USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can insert their own profile" ON public.profiles;
 CREATE POLICY "Users can insert their own profile" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = user_id);
 
 -- Vendors policies - public read for approved vendors
+DROP POLICY IF EXISTS "Anyone can view approved vendors" ON public.vendors;
 CREATE POLICY "Anyone can view approved vendors" ON public.vendors FOR SELECT USING (status = 'approved' OR auth.uid() = user_id);
+DROP POLICY IF EXISTS "Vendors can update their own profile" ON public.vendors;
 CREATE POLICY "Vendors can update their own profile" ON public.vendors FOR UPDATE USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can insert vendor profile" ON public.vendors;
 CREATE POLICY "Users can insert vendor profile" ON public.vendors FOR INSERT WITH CHECK (auth.uid() = user_id);
 
 -- Checklist policies
+DROP POLICY IF EXISTS "Users can view their own checklist" ON public.checklist_items;
 CREATE POLICY "Users can view their own checklist" ON public.checklist_items FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can insert checklist items" ON public.checklist_items;
 CREATE POLICY "Users can insert checklist items" ON public.checklist_items FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can update their own checklist" ON public.checklist_items;
 CREATE POLICY "Users can update their own checklist" ON public.checklist_items FOR UPDATE USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can delete their own checklist" ON public.checklist_items;
 CREATE POLICY "Users can delete their own checklist" ON public.checklist_items FOR DELETE USING (auth.uid() = user_id);
 
 -- Budget policies
+DROP POLICY IF EXISTS "Users can view their own budget" ON public.budget_categories;
 CREATE POLICY "Users can view their own budget" ON public.budget_categories FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can insert budget items" ON public.budget_categories;
 CREATE POLICY "Users can insert budget items" ON public.budget_categories FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can update their own budget" ON public.budget_categories;
 CREATE POLICY "Users can update their own budget" ON public.budget_categories FOR UPDATE USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can delete their own budget" ON public.budget_categories;
 CREATE POLICY "Users can delete their own budget" ON public.budget_categories FOR DELETE USING (auth.uid() = user_id);
 
 -- Guest policies
+DROP POLICY IF EXISTS "Users can view their own guests" ON public.guests;
 CREATE POLICY "Users can view their own guests" ON public.guests FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can insert guests" ON public.guests;
 CREATE POLICY "Users can insert guests" ON public.guests FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can update their own guests" ON public.guests;
 CREATE POLICY "Users can update their own guests" ON public.guests FOR UPDATE USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can delete their own guests" ON public.guests;
 CREATE POLICY "Users can delete their own guests" ON public.guests FOR DELETE USING (auth.uid() = user_id);
 
 -- Shortlist policies
+DROP POLICY IF EXISTS "Users can view their own shortlist" ON public.shortlist;
 CREATE POLICY "Users can view their own shortlist" ON public.shortlist FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can insert to shortlist" ON public.shortlist;
 CREATE POLICY "Users can insert to shortlist" ON public.shortlist FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can delete from shortlist" ON public.shortlist;
 CREATE POLICY "Users can delete from shortlist" ON public.shortlist FOR DELETE USING (auth.uid() = user_id);
 
 -- User roles table for admin
-CREATE TABLE public.user_roles (
+CREATE TABLE IF NOT EXISTS public.user_roles (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
   role user_role NOT NULL,
@@ -164,8 +203,11 @@ AS $$
 $$;
 
 -- Admin policies for vendors
+DROP POLICY IF EXISTS "Admins can view all vendors" ON public.vendors;
 CREATE POLICY "Admins can view all vendors" ON public.vendors FOR SELECT USING (public.has_role(auth.uid(), 'admin'));
+DROP POLICY IF EXISTS "Admins can update any vendor" ON public.vendors;
 CREATE POLICY "Admins can update any vendor" ON public.vendors FOR UPDATE USING (public.has_role(auth.uid(), 'admin'));
+DROP POLICY IF EXISTS "Admins can delete any vendor" ON public.vendors;
 CREATE POLICY "Admins can delete any vendor" ON public.vendors FOR DELETE USING (public.has_role(auth.uid(), 'admin'));
 
 -- Updated_at trigger function
@@ -177,11 +219,16 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Apply updated_at triggers
+-- Apply updated_at triggers (idempotent: drop if exists then create)
+DROP TRIGGER IF EXISTS handle_profiles_updated_at ON public.profiles;
 CREATE TRIGGER handle_profiles_updated_at BEFORE UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
+DROP TRIGGER IF EXISTS handle_vendors_updated_at ON public.vendors;
 CREATE TRIGGER handle_vendors_updated_at BEFORE UPDATE ON public.vendors FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
+DROP TRIGGER IF EXISTS handle_checklist_updated_at ON public.checklist_items;
 CREATE TRIGGER handle_checklist_updated_at BEFORE UPDATE ON public.checklist_items FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
+DROP TRIGGER IF EXISTS handle_budget_updated_at ON public.budget_categories;
 CREATE TRIGGER handle_budget_updated_at BEFORE UPDATE ON public.budget_categories FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
+DROP TRIGGER IF EXISTS handle_guests_updated_at ON public.guests;
 CREATE TRIGGER handle_guests_updated_at BEFORE UPDATE ON public.guests FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
 -- Function to create profile on signup
@@ -195,6 +242,7 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Trigger for new user signup
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();

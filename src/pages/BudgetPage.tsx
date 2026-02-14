@@ -104,6 +104,8 @@ export default function BudgetPage() {
     if (!error && data) {
       setCategories(data);
       toast({ title: 'Budget initialized!', description: 'Your wedding budget is ready.' });
+    } else if (error) {
+      toast({ title: 'Could not initialize budget', variant: 'destructive' });
     }
   };
 

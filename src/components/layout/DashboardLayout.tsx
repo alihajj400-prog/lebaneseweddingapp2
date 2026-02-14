@@ -14,9 +14,11 @@ import {
   Menu,
   X,
   ChevronRight,
+  Shield,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
+import { useAdminRole } from '@/hooks/useAdminRole';
 import { cn } from '@/lib/utils';
 import { LebaneseFlagHeart } from '@/components/common/LebaneseFlagHeart';
 import { BottomNav } from '@/components/layout/BottomNav';
@@ -25,13 +27,13 @@ interface DashboardLayoutProps {
   children: ReactNode;
 }
 
-const navItems = [
+const baseNavItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/checklist', label: 'Checklist', icon: CheckSquare },
   { href: '/budget', label: 'Budget', icon: DollarSign },
   { href: '/guests', label: 'Guest List', icon: Users },
   { href: '/vendors', label: 'Vendors', icon: Store },
-  { href: '/shortlist', label: 'Shortlist', icon: Bookmark },
+  { href: '/shortlist', label: 'Favorites', icon: Bookmark },
   { href: '/bookings', label: 'Bookings', icon: CalendarDays },
   { href: '/settings', label: 'Settings', icon: Settings },
 ];
@@ -41,6 +43,11 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut, profile } = useAuth();
+  const { isAdmin } = useAdminRole();
+
+  const navItems = isAdmin
+    ? [...baseNavItems, { href: '/admin', label: 'Admin', icon: Shield }]
+    : baseNavItems;
 
   const handleSignOut = async () => {
     await signOut();

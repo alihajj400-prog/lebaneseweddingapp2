@@ -1,58 +1,57 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, CheckSquare, Search, Wallet, User } from 'lucide-react';
+import { Home, Heart, CalendarDays, User, Shield, Store } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAdminRole } from '@/hooks/useAdminRole';
 
 const navItems = [
   { href: '/dashboard', label: 'Home', icon: Home },
-  { href: '/checklist', label: 'Checklist', icon: CheckSquare },
-  { href: '/vendors', label: 'Explore', icon: Search },
-  { href: '/budget', label: 'Budget', icon: Wallet },
-  { href: '/settings', label: 'Account', icon: User },
+  { href: '/vendors', label: 'Vendors', icon: Store },
+  { href: '/shortlist', label: 'Favorites', icon: Heart },
+  { href: '/bookings', label: 'Bookings', icon: CalendarDays },
+  { href: '/settings', label: 'Profile', icon: User },
 ];
 
 export function BottomNav() {
   const location = useLocation();
+  const { isAdmin } = useAdminRole();
+
+  const items = isAdmin
+    ? [...navItems, { href: '/admin', label: 'Admin', icon: Shield }]
+    : navItems;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 lg:hidden bg-background border-t border-border">
-      <div className="flex items-stretch justify-around">
-        {navItems.map((item) => {
-          const isActive = location.pathname === item.href || 
-            (item.href === '/vendors' && location.pathname.startsWith('/vendor'));
+    <nav
+      className="fixed bottom-0 left-0 right-0 z-50 lg:hidden bg-background/95 backdrop-blur border-t border-border"
+      aria-label="Mobile navigation"
+    >
+      <div className="flex items-stretch justify-around safe-area-pb">
+        {items.map((item) => {
+          const isActive =
+            location.pathname === item.href ||
+            (item.href === '/vendors' && location.pathname.startsWith('/vendors') && !location.pathname.startsWith('/vendor/'));
           const Icon = item.icon;
 
           return (
             <Link
               key={item.href}
               to={item.href}
-              className="flex-1 flex flex-col items-center py-2 relative"
-            >
-              {/* Active indicator line */}
-              {isActive && (
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-12 h-0.5 bg-primary rounded-full" />
+              className={cn(
+                'flex-1 flex flex-col items-center justify-center py-2.5 px-1 relative min-w-0 transition-colors',
+                isActive ? 'text-primary' : 'text-muted-foreground'
               )}
-              
-              <Icon 
-                className={cn(
-                  'w-6 h-6 mb-1 transition-colors',
-                  isActive ? 'text-primary' : 'text-muted-foreground'
-                )} 
-              />
-              <span 
-                className={cn(
-                  'text-[11px] font-medium transition-colors',
-                  isActive ? 'text-primary' : 'text-muted-foreground'
-                )}
-              >
+              aria-current={isActive ? 'page' : undefined}
+            >
+              {isActive && (
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-10 h-0.5 bg-primary rounded-full" />
+              )}
+              <Icon className="w-5 h-5 mb-1 shrink-0" aria-hidden />
+              <span className="text-[10px] font-medium truncate w-full text-center">
                 {item.label}
               </span>
             </Link>
           );
         })}
       </div>
-      
-      {/* Safe area padding for iOS */}
-      <div className="h-safe-area-inset-bottom bg-background" />
     </nav>
   );
 }

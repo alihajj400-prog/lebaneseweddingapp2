@@ -144,6 +144,8 @@ export default function GuestsPage() {
 
     if (!error) {
       setGuests(prev => prev.map(g => g.id === id ? { ...g, rsvp_status: status } : g));
+    } else {
+      toast({ title: 'Could not update RSVP', variant: 'destructive' });
     }
   };
 
@@ -156,6 +158,8 @@ export default function GuestsPage() {
     if (!error) {
       setGuests(prev => prev.filter(g => g.id !== id));
       toast({ title: 'Guest removed' });
+    } else {
+      toast({ title: 'Could not remove guest', variant: 'destructive' });
     }
   };
 

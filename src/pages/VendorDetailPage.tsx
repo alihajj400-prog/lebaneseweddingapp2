@@ -74,8 +74,7 @@ export default function VendorDetailPage() {
   const [contactLinks, setContactLinks] = useState<{ whatsapp?: string; email?: string }>({});
 
   const openExternal = (url: string) => {
-    // In the Lovable preview, the app is rendered inside an iframe.
-    // Some external sites (like wa.me) refuse to load in iframes.
+    // Some external sites (e.g. wa.me) refuse to load in iframes.
     // Try opening a new tab; if blocked, break out of the iframe.
     try {
       const w = window.open(url, '_blank', 'noopener,noreferrer');
@@ -159,13 +158,21 @@ export default function VendorDetailPage() {
     }
 
     if (isShortlisted) {
-      await supabase.from('shortlist').delete().eq('vendor_id', id).eq('user_id', user.id);
-      setIsShortlisted(false);
-      toast({ title: 'Removed from favourites' });
+      const { error } = await supabase.from('shortlist').delete().eq('vendor_id', id).eq('user_id', user.id);
+      if (!error) {
+        setIsShortlisted(false);
+        toast({ title: 'Removed from favourites' });
+      } else {
+        toast({ title: 'Could not remove from favourites', variant: 'destructive' });
+      }
     } else {
-      await supabase.from('shortlist').insert({ vendor_id: id, user_id: user.id });
-      setIsShortlisted(true);
-      toast({ title: 'Added to favourites!' });
+      const { error } = await supabase.from('shortlist').insert({ vendor_id: id, user_id: user.id });
+      if (!error) {
+        setIsShortlisted(true);
+        toast({ title: 'Added to favourites!' });
+      } else {
+        toast({ title: 'Could not add to favourites', variant: 'destructive' });
+      }
     }
   };
 
@@ -236,10 +243,10 @@ export default function VendorDetailPage() {
   const images = vendor.portfolio_images || [];
 
   return (
-    <div className="min-h-screen bg-background pb-20 lg:pb-0">
+    <div className="min-h-screen bg-background pb-32 lg:pb-0">
       <Header />
 
-      <main className="pt-20">
+      <main className="pt-20 pb-4">
         {/* Breadcrumb */}
         <div className="bg-muted/30 border-b border-border">
           <div className="container-custom mx-auto px-4 py-3">
@@ -529,6 +536,29 @@ export default function VendorDetailPage() {
           </div>
         </div>
       </main>
+
+      {/* Sticky CTA on mobile */}
+      <div className="fixed bottom-16 left-0 right-0 z-40 lg:hidden p-3 bg-background/95 backdrop-blur border-t border-border safe-area-pb">
+        <div className="container-custom mx-auto flex gap-2">
+          <Button
+            size="lg"
+            className="flex-1 gap-2"
+            onClick={() => setShowContactDialog(true)}
+          >
+            <Send className="w-4 h-4" />
+            Contact / Book
+          </Button>
+          <Button
+            variant="outline"
+            size="lg"
+            className="shrink-0 px-4"
+            onClick={toggleShortlist}
+            aria-label={isShortlisted ? 'Remove from favourites' : 'Add to favourites'}
+          >
+            <Heart className={`w-5 h-5 ${isShortlisted ? 'fill-primary text-primary' : ''}`} />
+          </Button>
+        </div>
+      </div>
 
       <Footer />
 

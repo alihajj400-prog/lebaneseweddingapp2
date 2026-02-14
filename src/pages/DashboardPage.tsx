@@ -16,6 +16,7 @@ import { Progress } from '@/components/ui/progress';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 import { RecommendedVendors } from '@/components/dashboard/RecommendedVendors';
 
 interface DashboardStats {
@@ -30,6 +31,7 @@ interface DashboardStats {
 
 export default function DashboardPage() {
   const { profile, user } = useAuth();
+  const { toast } = useToast();
   const [stats, setStats] = useState<DashboardStats>({
     tasksCompleted: 0,
     totalTasks: 0,
@@ -100,6 +102,7 @@ export default function DashboardPage() {
       });
     } catch (error) {
       console.error('Error fetching stats:', error);
+      toast({ title: 'Error loading dashboard stats', variant: 'destructive' });
     } finally {
       setLoading(false);
     }

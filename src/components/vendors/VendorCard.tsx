@@ -134,14 +134,16 @@ export function VendorCard({ vendor, isShortlisted, onToggleShortlist, index = 0
             </h3>
           </Link>
 
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
-            <MapPin className="w-3 h-3 text-primary flex-shrink-0" />
-            <span>{getRegionLabel(vendor.region)}</span>
+          <div className="flex flex-wrap items-center gap-1.5 mt-2">
+            <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-primary/10 text-primary text-xs font-medium">
+              {getCategoryLabel(vendor.category)}
+            </span>
+            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+              <MapPin className="w-3 h-3 text-primary flex-shrink-0" />
+              {getRegionLabel(vendor.region)}
+            </span>
             {priceTier && (
-              <>
-                <span className="mx-1">·</span>
-                <span>{priceTier.symbol}</span>
-              </>
+              <span className="text-xs text-muted-foreground">{priceTier.symbol}</span>
             )}
           </div>
 

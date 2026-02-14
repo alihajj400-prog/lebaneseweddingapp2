@@ -1,11 +1,13 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Heart, CheckCircle2, DollarSign, Users, Store, Star,
   ArrowRight, Sparkles, MapPin, Camera, Music, Flower2,
-  Drum, Building2, Cake, Quote,
+  Drum, Building2, Cake, Quote, Search,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { WebsiteLayout } from '../components/WebsiteLayout';
 
 const howItWorks = [
@@ -45,6 +47,16 @@ const stats = [
 ];
 
 export default function HomePage() {
+  const [heroSearch, setHeroSearch] = useState('');
+  const navigate = useNavigate();
+
+  const handleHeroSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const q = heroSearch.trim();
+    if (q) navigate(`/vendors?search=${encodeURIComponent(q)}`);
+    else navigate('/vendors');
+  };
+
   return (
     <WebsiteLayout>
       {/* Hero */}
@@ -72,10 +84,28 @@ export default function HomePage() {
               <span className="text-gradient-gold">In One Place</span>
             </h1>
 
-            <p className="text-lg md:text-xl text-primary-foreground/80 mb-10 max-w-2xl mx-auto leading-relaxed">
+            <p className="text-lg md:text-xl text-primary-foreground/80 mb-8 max-w-2xl mx-auto leading-relaxed">
               The complete wedding planning platform designed exclusively for Lebanese couples.
               Find vendors, manage budgets, and create unforgettable memories.
             </p>
+
+            {/* Hero search */}
+            <form onSubmit={handleHeroSearch} className="max-w-xl mx-auto mb-10">
+              <div className="relative rounded-xl overflow-hidden shadow-lg ring-1 ring-primary-foreground/20">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-primary-foreground/70" />
+                <Input
+                  type="search"
+                  placeholder="Search venues, photographers, DJs..."
+                  value={heroSearch}
+                  onChange={(e) => setHeroSearch(e.target.value)}
+                  className="pl-12 pr-4 py-4 h-14 bg-background/95 border-0 text-foreground placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-primary"
+                  aria-label="Search wedding vendors"
+                />
+                <Button type="submit" size="lg" className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg">
+                  Search
+                </Button>
+              </div>
+            </form>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link to="/vendors">

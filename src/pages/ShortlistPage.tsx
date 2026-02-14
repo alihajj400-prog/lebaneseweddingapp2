@@ -103,6 +103,8 @@ export default function ShortlistPage() {
     if (!error) {
       setItems(prev => prev.filter(i => i.id !== id));
       toast({ title: 'Removed from shortlist' });
+    } else {
+      toast({ title: 'Could not remove from shortlist', variant: 'destructive' });
     }
   };
 
@@ -121,6 +123,8 @@ export default function ShortlistPage() {
       setItems(prev => prev.map(i => i.id === id ? { ...i, notes: notesValue } : i));
       setEditingNotes(null);
       toast({ title: 'Notes saved!' });
+    } else {
+      toast({ title: 'Could not save notes', variant: 'destructive' });
     }
   };
 

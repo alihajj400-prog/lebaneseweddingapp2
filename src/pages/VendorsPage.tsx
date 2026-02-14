@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { VendorCard } from '@/components/vendors/VendorCard';
 import { VendorFilters } from '@/components/vendors/VendorFilters';
 import { CategoryTabs } from '@/components/vendors/CategoryTabs';
+import { VendorCardSkeletonGrid } from '@/components/vendors/VendorCardSkeleton';
 import { VENDOR_CATEGORIES, LEBANESE_REGIONS } from '@/lib/constants';
 import { EmptyState } from '@/components/common/EmptyState';
 import { BottomNav } from '@/components/layout/BottomNav';
@@ -91,7 +92,13 @@ export default function VendorsPage() {
   const regionFilter = searchParams.get('region') || 'all';
   const priceFilter = searchParams.get('price') || 'all';
   const sortBy = searchParams.get('sort') || 'recommended';
+  const searchParam = searchParams.get('search') || '';
   const { profile } = useAuth();
+
+  // Sync URL search param with local state (e.g. from header global search)
+  useEffect(() => {
+    if (searchParam !== searchQuery) setSearchQuery(searchParam);
+  }, [searchParam]);
 
   useEffect(() => {
     fetchVendors();
@@ -132,6 +139,8 @@ export default function VendorsPage() {
       }
 
       setVendors(filteredData);
+    } else {
+      toast({ title: 'Error loading vendors', variant: 'destructive' });
     }
     setLoading(false);
   };
@@ -266,8 +275,8 @@ export default function VendorsPage() {
 
           {/* Loading State */}
           {loading && (
-            <div className="flex items-center justify-center py-16">
-              <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+            <div className="mt-6">
+              <VendorCardSkeletonGrid count={6} />
             </div>
           )}
 
@@ -291,7 +300,11 @@ export default function VendorsPage() {
             <EmptyState
               icon={Store}
               title="No vendors found"
-              description="Try adjusting your filters or search query to find the perfect vendors for your wedding."
+              description={
+                searchQuery || categoryFilter !== 'all' || regionFilter !== 'all' || priceFilter !== 'all'
+                  ? 'Try adjusting your filters or search query to find the perfect vendors for your wedding.'
+                  : 'No approved vendors in the directory yet. Check back soon!'
+              }
               action={{
                 label: 'Clear Filters',
                 onClick: clearFilters,
