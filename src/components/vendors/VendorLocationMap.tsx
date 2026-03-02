@@ -173,6 +173,7 @@ export function VendorLocationMap({ currentVendor, category }: VendorLocationMap
                           src={vendor.cover_image_url} 
                           alt={vendor.business_name}
                           className="w-full h-20 object-cover rounded mb-2"
+                          loading="lazy"
                         />
                       )}
                       <p className="font-semibold">{vendor.business_name}</p>

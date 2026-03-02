@@ -468,6 +468,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      count_vendor_unique_visitors: {
+        Args: {
+          p_vendor_id: string
+        }
+        Returns: number
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["user_role"]

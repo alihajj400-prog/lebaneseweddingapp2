@@ -1,3 +1,4 @@
+import { Suspense, lazy } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -6,45 +7,53 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { useAdminRole } from "@/hooks/useAdminRole";
 
-// Pages
-import LandingPage from "./pages/LandingPage";
+function PageSpinner() {
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+    </div>
+  );
+}
 
-// Marketing Website Pages
+// Marketing pages (eagerly loaded — they're the entry point)
 import HomePage from "./website/pages/HomePage";
-import ForCouplesPage from "./website/pages/ForCouplesPage";
-import ForVendorsPage from "./website/pages/ForVendorsPage";
-import AboutPage from "./website/pages/AboutPage";
-import ContactPage from "./website/pages/ContactPage";
-import AuthPage from "./pages/AuthPage";
-import VendorAuthPage from "./pages/VendorAuthPage";
-import OnboardingPage from "./pages/OnboardingPage";
-import DashboardPage from "./pages/DashboardPage";
-import ChecklistPage from "./pages/ChecklistPage";
-import BudgetPage from "./pages/BudgetPage";
-import GuestsPage from "./pages/GuestsPage";
-import VendorsPage from "./pages/VendorsPage";
-import VendorDetailPage from "./pages/VendorDetailPage";
-import ShortlistPage from "./pages/ShortlistPage";
-import BookingsPage from "./pages/BookingsPage";
-import SettingsPage from "./pages/SettingsPage";
-import NotFound from "./pages/NotFound";
+const ForCouplesPage = lazy(() => import("./website/pages/ForCouplesPage"));
+const ForVendorsPage = lazy(() => import("./website/pages/ForVendorsPage"));
+const AboutPage = lazy(() => import("./website/pages/AboutPage"));
+const ContactPage = lazy(() => import("./website/pages/ContactPage"));
 
-// Vendor Portal Pages
-import VendorDashboardPage from "./pages/vendor/VendorDashboardPage";
-import VendorProfilePage from "./pages/vendor/VendorProfilePage";
-// VendorImagesPage and VendorBrochurePage merged into VendorProfilePage
-import VendorLeadsPage from "./pages/vendor/VendorLeadsPage";
-import VendorPromotionsPage from "./pages/vendor/VendorPromotionsPage";
-import VendorSettingsPage from "./pages/vendor/VendorSettingsPage";
-import VendorBookingsPage from "./pages/vendor/VendorBookingsPage";
-import VendorSubscriptionPage from "./pages/vendor/VendorSubscriptionPage";
+// Auth
+const AuthPage = lazy(() => import("./pages/AuthPage"));
+const VendorAuthPage = lazy(() => import("./pages/VendorAuthPage"));
 
-// Admin Pages
-import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
-import AdminVendorsPage from "./pages/admin/AdminVendorsPage";
-import AdminVendorEditorPage from "./pages/admin/AdminVendorEditorPage";
-import AdminUsersPage from "./pages/admin/AdminUsersPage";
-import AdminSettingsPage from "./pages/admin/AdminSettingsPage";
+// Couple pages
+const OnboardingPage = lazy(() => import("./pages/OnboardingPage"));
+const DashboardPage = lazy(() => import("./pages/DashboardPage"));
+const ChecklistPage = lazy(() => import("./pages/ChecklistPage"));
+const BudgetPage = lazy(() => import("./pages/BudgetPage"));
+const GuestsPage = lazy(() => import("./pages/GuestsPage"));
+const VendorsPage = lazy(() => import("./pages/VendorsPage"));
+const VendorDetailPage = lazy(() => import("./pages/VendorDetailPage"));
+const ShortlistPage = lazy(() => import("./pages/ShortlistPage"));
+const BookingsPage = lazy(() => import("./pages/BookingsPage"));
+const SettingsPage = lazy(() => import("./pages/SettingsPage"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+
+// Vendor portal (separate chunk — only vendors load these)
+const VendorDashboardPage = lazy(() => import("./pages/vendor/VendorDashboardPage"));
+const VendorProfilePage = lazy(() => import("./pages/vendor/VendorProfilePage"));
+const VendorLeadsPage = lazy(() => import("./pages/vendor/VendorLeadsPage"));
+const VendorPromotionsPage = lazy(() => import("./pages/vendor/VendorPromotionsPage"));
+const VendorSettingsPage = lazy(() => import("./pages/vendor/VendorSettingsPage"));
+const VendorBookingsPage = lazy(() => import("./pages/vendor/VendorBookingsPage"));
+const VendorSubscriptionPage = lazy(() => import("./pages/vendor/VendorSubscriptionPage"));
+
+// Admin pages (separate chunk — only admins load these, includes recharts)
+const AdminDashboardPage = lazy(() => import("./pages/admin/AdminDashboardPage"));
+const AdminVendorsPage = lazy(() => import("./pages/admin/AdminVendorsPage"));
+const AdminVendorEditorPage = lazy(() => import("./pages/admin/AdminVendorEditorPage"));
+const AdminUsersPage = lazy(() => import("./pages/admin/AdminUsersPage"));
+const AdminSettingsPage = lazy(() => import("./pages/admin/AdminSettingsPage"));
 
 const queryClient = new QueryClient();
 
@@ -163,6 +172,7 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
 }
 
 const AppRoutes = () => (
+  <Suspense fallback={<PageSpinner />}>
   <Routes>
     {/* Public Marketing Website Pages */}
     <Route path="/" element={<HomePage />} />
@@ -212,6 +222,7 @@ const AppRoutes = () => (
     
     <Route path="*" element={<NotFound />} />
   </Routes>
+  </Suspense>
 );
 
 const App = () => (

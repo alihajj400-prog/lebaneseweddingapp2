@@ -441,7 +441,7 @@ export default function AdminVendorEditorPage() {
                 <div>
                   <p className="text-sm font-medium text-muted-foreground mb-2">Cover image</p>
                   <div className="relative aspect-video max-w-md rounded-lg overflow-hidden border bg-muted">
-                    <img src={form.cover_image_url} alt="Cover" className="w-full h-full object-cover" />
+                    <img src={form.cover_image_url} alt="Cover" className="w-full h-full object-cover" loading="lazy" />
                   </div>
                 </div>
               )}
@@ -449,7 +449,7 @@ export default function AdminVendorEditorPage() {
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                   {form.portfolio_images.map((url) => (
                     <div key={url} className="group relative aspect-square rounded-lg overflow-hidden border bg-muted">
-                      <img src={url} alt="" className="w-full h-full object-cover" />
+                      <img src={url} alt="" className="w-full h-full object-cover" loading="lazy" />
                       <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                         <Button
                           type="button"

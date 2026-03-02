@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { useAuth } from '@/hooks/useAuth';
@@ -43,6 +43,10 @@ function calculateVendorScore(
   return score;
 }
 
+const PAGE_SIZE = 24;
+
+const VENDOR_LIST_COLUMNS = 'id, business_name, category, region, description, starting_price_usd, portfolio_images, shortlist_count, cover_image_url, is_featured, subscription_plan' as const;
+
 export default function VendorsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { user, profile } = useAuth();
@@ -50,6 +54,8 @@ export default function VendorsPage() {
   const [vendors, setVendors] = useState<(VendorListItem & { is_featured?: boolean; subscription_plan?: string })[]>([]);
   const [shortlistedIds, setShortlistedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
 
   const categoryFilter = searchParams.get('category') || 'all';
@@ -63,40 +69,43 @@ export default function VendorsPage() {
   }, [searchParam]);
 
   useEffect(() => {
-    fetchVendors();
+    fetchVendors(true);
     if (user) fetchShortlist();
   }, [categoryFilter, regionFilter, priceFilter, user]);
 
-  const fetchVendors = async () => {
+  const buildQuery = () => {
     let query = supabase
       .from('vendors')
-      .select('*')
+      .select(VENDOR_LIST_COLUMNS)
       .eq('status', 'approved')
-      .order('shortlist_count', { ascending: false })
-      .range(0, 999);
+      .order('shortlist_count', { ascending: false });
 
     if (categoryFilter !== 'all') query = query.eq('category', categoryFilter as never);
     if (regionFilter !== 'all') query = query.eq('region', regionFilter as never);
+    if (priceFilter === 'budget') query = query.lt('starting_price_usd', 1000);
+    else if (priceFilter === 'mid') query = query.gte('starting_price_usd', 1000).lt('starting_price_usd', 3000);
+    else if (priceFilter === 'luxury') query = query.gte('starting_price_usd', 3000);
+    return query;
+  };
 
-    const { data, error } = await query;
+  const fetchVendors = async (reset = false) => {
+    if (reset) { setLoading(true); setVendors([]); setHasMore(true); }
+    else setLoadingMore(true);
+
+    const from = reset ? 0 : vendors.length;
+    const to = from + PAGE_SIZE - 1;
+
+    const { data, error } = await buildQuery().range(from, to);
 
     if (!error) {
-      let list = data || [];
-      if (priceFilter !== 'all') {
-        list = list.filter((v: { starting_price_usd: number | null }) => {
-          const price = v.starting_price_usd;
-          if (price == null) return priceFilter === 'budget';
-          if (priceFilter === 'budget') return price < 1000;
-          if (priceFilter === 'mid') return price >= 1000 && price < 3000;
-          if (priceFilter === 'luxury') return price >= 3000;
-          return true;
-        });
-      }
-      setVendors(list);
+      const page = data || [];
+      setVendors((prev) => reset ? page : [...prev, ...page]);
+      setHasMore(page.length === PAGE_SIZE);
     } else {
       toast({ title: 'Error loading vendors', variant: 'destructive' });
     }
     setLoading(false);
+    setLoadingMore(false);
   };
 
   const fetchShortlist = async () => {
@@ -105,14 +114,15 @@ export default function VendorsPage() {
     if (data) setShortlistedIds(new Set(data.map((s) => s.vendor_id)));
   };
 
-  const toggleShortlist = async (vendorId: string) => {
+  const toggleShortlist = useCallback(async (vendorId: string) => {
     if (!user) {
       toast({ title: 'Please sign in', description: 'You need to be signed in to save vendors.' });
       return;
     }
     const isShortlisted = shortlistedIds.has(vendorId);
     if (isShortlisted) {
-      await supabase.from('shortlist').delete().eq('vendor_id', vendorId).eq('user_id', user.id);
+      const { error } = await supabase.from('shortlist').delete().eq('vendor_id', vendorId).eq('user_id', user.id);
+      if (error) { toast({ title: 'Error', description: error.message, variant: 'destructive' }); return; }
       setShortlistedIds((prev) => {
         const next = new Set(prev);
         next.delete(vendorId);
@@ -120,11 +130,12 @@ export default function VendorsPage() {
       });
       toast({ title: 'Removed from shortlist' });
     } else {
-      await supabase.from('shortlist').insert({ vendor_id: vendorId, user_id: user.id });
+      const { error } = await supabase.from('shortlist').insert({ vendor_id: vendorId, user_id: user.id });
+      if (error) { toast({ title: 'Error', description: error.message, variant: 'destructive' }); return; }
       setShortlistedIds((prev) => new Set([...prev, vendorId]));
       toast({ title: 'Added to shortlist!' });
     }
-  };
+  }, [user, shortlistedIds, toast]);
 
   const setFilter = (key: string, value: string) => {
     const next = new URLSearchParams(searchParams);
@@ -138,42 +149,47 @@ export default function VendorsPage() {
     setSearchQuery('');
   };
 
-  const filteredVendors = vendors.filter(
-    (v) =>
-      !searchQuery ||
-      v.business_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      v.description?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const sortedVendors = useMemo(() => {
+    const filtered = vendors.filter(
+      (v) =>
+        !searchQuery ||
+        v.business_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        v.description?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+    return [...filtered].sort((a, b) => {
+      const aFeat = a.is_featured || a.subscription_plan === 'featured';
+      const bFeat = b.is_featured || b.subscription_plan === 'featured';
+      if (aFeat && !bFeat) return -1;
+      if (!aFeat && bFeat) return 1;
+      switch (sortBy) {
+        case 'recommended':
+          return (
+            calculateVendorScore(b, profile?.estimated_budget_usd ?? null, regionFilter !== 'all' ? regionFilter : null) -
+            calculateVendorScore(a, profile?.estimated_budget_usd ?? null, regionFilter !== 'all' ? regionFilter : null)
+          );
+        case 'featured':
+          if (a.is_featured && !b.is_featured) return -1;
+          if (!a.is_featured && b.is_featured) return 1;
+          return b.shortlist_count - a.shortlist_count;
+        case 'popularity':
+          return b.shortlist_count - a.shortlist_count;
+        case 'newest':
+          return 0;
+        case 'price_low':
+          return (a.starting_price_usd ?? 999999) - (b.starting_price_usd ?? 999999);
+        case 'price_high':
+          return (b.starting_price_usd ?? 0) - (a.starting_price_usd ?? 0);
+        case 'name':
+          return a.business_name.localeCompare(b.business_name);
+        default:
+          return 0;
+      }
+    });
+  }, [vendors, searchQuery, sortBy, profile?.estimated_budget_usd, regionFilter]);
 
-  const sortedVendors = [...filteredVendors].sort((a, b) => {
-    const aFeat = a.is_featured || a.subscription_plan === 'featured';
-    const bFeat = b.is_featured || b.subscription_plan === 'featured';
-    if (aFeat && !bFeat) return -1;
-    if (!aFeat && bFeat) return 1;
-    switch (sortBy) {
-      case 'recommended':
-        return (
-          calculateVendorScore(b, profile?.estimated_budget_usd ?? null, regionFilter !== 'all' ? regionFilter : null) -
-          calculateVendorScore(a, profile?.estimated_budget_usd ?? null, regionFilter !== 'all' ? regionFilter : null)
-        );
-      case 'featured':
-        if (a.is_featured && !b.is_featured) return -1;
-        if (!a.is_featured && b.is_featured) return 1;
-        return b.shortlist_count - a.shortlist_count;
-      case 'popularity':
-        return b.shortlist_count - a.shortlist_count;
-      case 'newest':
-        return 0;
-      case 'price_low':
-        return (a.starting_price_usd ?? 999999) - (b.starting_price_usd ?? 999999);
-      case 'price_high':
-        return (b.starting_price_usd ?? 0) - (a.starting_price_usd ?? 0);
-      case 'name':
-        return a.business_name.localeCompare(b.business_name);
-      default:
-        return 0;
-    }
-  });
+  const loadMore = useCallback(() => {
+    if (!loadingMore && hasMore) fetchVendors(false);
+  }, [loadingMore, hasMore, vendors.length]);
 
   const title =
     categoryFilter !== 'all'
@@ -198,6 +214,9 @@ export default function VendorsPage() {
         loading={loading}
         shortlistedIds={shortlistedIds}
         onToggleShortlist={toggleShortlist}
+        hasMore={hasMore}
+        loadingMore={loadingMore}
+        onLoadMore={loadMore}
       />
     </DashboardLayout>
   );

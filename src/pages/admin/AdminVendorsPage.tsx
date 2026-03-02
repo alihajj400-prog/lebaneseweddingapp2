@@ -30,11 +30,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { CheckCircle, XCircle, Eye, ExternalLink, Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import { CheckCircle, XCircle, Eye, ExternalLink, Pencil, Plus, Search, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { VENDOR_CATEGORIES, LEBANESE_REGIONS } from '@/lib/constants';
 import { format } from 'date-fns';
+
+const ADMIN_PAGE_SIZE = 50;
 
 interface VendorRow {
   id: string;
@@ -67,6 +69,8 @@ export default function AdminVendorsPage() {
   const [categoryFilter, setCategoryFilter] = useState<string>(() => searchParams.get('category') || 'all');
   const [regionFilter, setRegionFilter] = useState<string>(() => searchParams.get('region') || 'all');
   const [sort, setSort] = useState<string>('newest');
+  const [page, setPage] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
   const [actionDialog, setActionDialog] = useState<{
     open: boolean;
     vendor: VendorRow | null;
@@ -75,32 +79,40 @@ export default function AdminVendorsPage() {
 
   const fetchVendors = useCallback(async () => {
     setLoading(true);
+
+    let countQuery = supabase
+      .from('vendors')
+      .select('*', { count: 'exact', head: true });
     let query = supabase
       .from('vendors')
       .select('id, business_name, category, region, status, email, phone, created_at, starting_price_usd, is_sample')
       .order('created_at', { ascending: false })
-      .range(0, 999);
+      .range(page * ADMIN_PAGE_SIZE, (page + 1) * ADMIN_PAGE_SIZE - 1);
 
     if (statusFilter !== 'all') {
       query = query.eq('status', statusFilter);
+      countQuery = countQuery.eq('status', statusFilter);
     }
     if (categoryFilter !== 'all') {
       query = query.eq('category', categoryFilter);
+      countQuery = countQuery.eq('category', categoryFilter);
     }
     if (regionFilter !== 'all') {
       query = query.eq('region', regionFilter);
+      countQuery = countQuery.eq('region', regionFilter);
     }
 
-    const { data, error } = await query;
+    const [{ data, error }, { count }] = await Promise.all([query, countQuery]);
 
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
       setVendors([]);
     } else {
       setVendors((data as VendorRow[]) || []);
+      setTotalCount(count ?? 0);
     }
     setLoading(false);
-  }, [statusFilter, categoryFilter, regionFilter, toast]);
+  }, [statusFilter, categoryFilter, regionFilter, page, toast]);
 
   useEffect(() => {
     const status = searchParams.get('status') || 'all';
@@ -109,6 +121,7 @@ export default function AdminVendorsPage() {
     setStatusFilter(status);
     setCategoryFilter(category);
     setRegionFilter(region);
+    setPage(0);
   }, [searchParams]);
 
   useEffect(() => {
@@ -380,6 +393,32 @@ export default function AdminVendorsPage() {
                     ))}
                   </TableBody>
                 </Table>
+              </div>
+            )}
+
+            {!loading && totalCount > ADMIN_PAGE_SIZE && (
+              <div className="flex items-center justify-between px-6 py-4 border-t border-border">
+                <p className="text-sm text-muted-foreground">
+                  Showing {page * ADMIN_PAGE_SIZE + 1}–{Math.min((page + 1) * ADMIN_PAGE_SIZE, totalCount)} of {totalCount}
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={page === 0}
+                    onClick={() => setPage((p) => p - 1)}
+                  >
+                    <ChevronLeft className="w-4 h-4 mr-1" /> Previous
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={(page + 1) * ADMIN_PAGE_SIZE >= totalCount}
+                    onClick={() => setPage((p) => p + 1)}
+                  >
+                    Next <ChevronRight className="w-4 h-4 ml-1" />
+                  </Button>
+                </div>
               </div>
             )}
           </CardContent>

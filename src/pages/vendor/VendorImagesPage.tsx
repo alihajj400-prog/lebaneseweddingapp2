@@ -226,6 +226,7 @@ export default function VendorImagesPage() {
                     src={coverImage}
                     alt="Cover"
                     className="w-full h-full object-cover"
+                    loading="lazy"
                   />
                 </div>
               </CardContent>
@@ -273,6 +274,7 @@ export default function VendorImagesPage() {
                         src={img}
                         alt={`Portfolio ${index + 1}`}
                         className="w-full h-full object-cover"
+                        loading="lazy"
                       />
                       
                       {/* Overlay Actions */}

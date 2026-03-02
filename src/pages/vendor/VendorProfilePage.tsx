@@ -145,7 +145,12 @@ export default function VendorProfilePage() {
 
     if (newImages.length > 0) {
       const updatedImages = [...images, ...newImages];
-      await supabase.from('vendors').update({ portfolio_images: updatedImages }).eq('id', vendor.id);
+      const { error: updateError } = await supabase.from('vendors').update({ portfolio_images: updatedImages }).eq('id', vendor.id);
+      if (updateError) {
+        toast({ title: 'Error', description: 'Failed to save image list.', variant: 'destructive' });
+        setUploading(false);
+        return;
+      }
       setImages(updatedImages);
       toast({ title: 'Images Uploaded', description: `${newImages.length} image(s) added.` });
     }
@@ -157,7 +162,8 @@ export default function VendorProfilePage() {
   const deleteImage = async (imageUrl: string) => {
     if (!vendor) return;
     const updatedImages = images.filter(img => img !== imageUrl);
-    await supabase.from('vendors').update({ portfolio_images: updatedImages }).eq('id', vendor.id);
+    const { error } = await supabase.from('vendors').update({ portfolio_images: updatedImages }).eq('id', vendor.id);
+    if (error) { toast({ title: 'Error', description: 'Failed to delete image.', variant: 'destructive' }); return; }
     setImages(updatedImages);
 
     if (coverImage === imageUrl) {
@@ -169,7 +175,8 @@ export default function VendorProfilePage() {
 
   const setCover = async (imageUrl: string) => {
     if (!vendor) return;
-    await supabase.from('vendors').update({ cover_image_url: imageUrl }).eq('id', vendor.id);
+    const { error } = await supabase.from('vendors').update({ cover_image_url: imageUrl }).eq('id', vendor.id);
+    if (error) { toast({ title: 'Error', description: 'Failed to set cover.', variant: 'destructive' }); return; }
     setCoverImage(imageUrl);
     toast({ title: 'Cover Image Set' });
   };
@@ -207,7 +214,8 @@ export default function VendorProfilePage() {
       .from('vendor-files')
       .getPublicUrl(filePath);
 
-    await supabase.from('vendors').update({ brochure_url: publicUrl.publicUrl }).eq('id', vendor.id);
+    const { error: urlError } = await supabase.from('vendors').update({ brochure_url: publicUrl.publicUrl }).eq('id', vendor.id);
+    if (urlError) { toast({ title: 'Error', description: 'Failed to save brochure URL.', variant: 'destructive' }); setUploadingBrochure(false); return; }
     setBrochureUrl(publicUrl.publicUrl);
     toast({ title: 'Brochure Uploaded' });
     setUploadingBrochure(false);
@@ -218,7 +226,8 @@ export default function VendorProfilePage() {
     if (!brochureUrl || !vendor) return;
     const filePath = brochureUrl.split('/vendor-files/')[1];
     if (filePath) await supabase.storage.from('vendor-files').remove([filePath]);
-    await supabase.from('vendors').update({ brochure_url: null }).eq('id', vendor.id);
+    const { error } = await supabase.from('vendors').update({ brochure_url: null }).eq('id', vendor.id);
+    if (error) { toast({ title: 'Error', description: 'Failed to delete brochure.', variant: 'destructive' }); return; }
     setBrochureUrl(null);
     toast({ title: 'Brochure Deleted' });
   };
@@ -400,7 +409,7 @@ export default function VendorProfilePage() {
                 </CardHeader>
                 <CardContent>
                   <div className="relative aspect-video max-w-sm rounded-lg overflow-hidden">
-                    <img src={coverImage} alt="Cover" className="w-full h-full object-cover" />
+                    <img src={coverImage} alt="Cover" className="w-full h-full object-cover" loading="lazy" />
                   </div>
                 </CardContent>
               </Card>
@@ -427,7 +436,7 @@ export default function VendorProfilePage() {
                         transition={{ delay: index * 0.03 }}
                         className="group relative aspect-square rounded-lg overflow-hidden border bg-muted"
                       >
-                        <img src={img} alt={`Portfolio ${index + 1}`} className="w-full h-full object-cover" />
+                        <img src={img} alt={`Portfolio ${index + 1}`} className="w-full h-full object-cover" loading="lazy" />
                         <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                           <Button size="icon" variant={coverImage === img ? "default" : "secondary"} onClick={() => setCover(img)} title="Set as cover">
                             <Star className={`w-4 h-4 ${coverImage === img ? 'fill-current' : ''}`} />

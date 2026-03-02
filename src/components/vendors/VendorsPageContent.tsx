@@ -1,4 +1,5 @@
-import { Store } from 'lucide-react';
+import { Store, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { VendorFilters } from './VendorFilters';
 import { CategoryTabs } from './CategoryTabs';
 import { VendorList } from './VendorList';
@@ -7,9 +8,7 @@ import { EmptyState } from '@/components/common/EmptyState';
 import type { VendorListItem } from './VendorList';
 
 export interface VendorsPageContentProps {
-  /** Page title (e.g. "Find Wedding Vendors" or category label) */
   title: string;
-  /** Subtitle, e.g. "154 vendors in Lebanon" */
   subtitle: string;
   searchQuery: string;
   onSearchChange: (query: string) => void;
@@ -23,6 +22,9 @@ export interface VendorsPageContentProps {
   loading: boolean;
   shortlistedIds: Set<string>;
   onToggleShortlist: (vendorId: string) => void;
+  hasMore?: boolean;
+  loadingMore?: boolean;
+  onLoadMore?: () => void;
 }
 
 /**
@@ -44,6 +46,9 @@ export function VendorsPageContent({
   loading,
   shortlistedIds,
   onToggleShortlist,
+  hasMore,
+  loadingMore,
+  onLoadMore,
 }: VendorsPageContentProps) {
   return (
     <div className="space-y-6">
@@ -89,6 +94,27 @@ export function VendorsPageContent({
             shortlistedIds={shortlistedIds}
             onToggleShortlist={onToggleShortlist}
           />
+
+          {hasMore && onLoadMore && (
+            <div className="flex justify-center mt-8">
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={onLoadMore}
+                disabled={loadingMore}
+                className="min-w-[200px]"
+              >
+                {loadingMore ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Loading...
+                  </>
+                ) : (
+                  'Load More Vendors'
+                )}
+              </Button>
+            </div>
+          )}
         </div>
       )}
 

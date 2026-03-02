@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
+import { memo } from 'react';
 import { motion } from 'framer-motion';
-import { MapPin, Heart, Users, ChevronLeft, ChevronRight } from 'lucide-react';
+import { MapPin, Heart, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { VENDOR_CATEGORIES, LEBANESE_REGIONS } from '@/lib/constants';
@@ -22,7 +23,7 @@ interface VendorCardProps {
   index?: number;
 }
 
-export function VendorCard({ vendor, isShortlisted, onToggleShortlist, index = 0 }: VendorCardProps) {
+export const VendorCard = memo(function VendorCard({ vendor, isShortlisted, onToggleShortlist, index = 0 }: VendorCardProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const portfolioImages = vendor.portfolio_images || [];
   const images = portfolioImages.length > 0 
@@ -78,6 +79,7 @@ export function VendorCard({ vendor, isShortlisted, onToggleShortlist, index = 0
                 <img
                   src={images[currentImageIndex]}
                   alt={vendor.business_name}
+                  loading="lazy"
                   className="w-full h-full object-cover"
                 />
               </Link>
@@ -174,4 +176,4 @@ export function VendorCard({ vendor, isShortlisted, onToggleShortlist, index = 0
       </div>
     </motion.div>
   );
-}
+});

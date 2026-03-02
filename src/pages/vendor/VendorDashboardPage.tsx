@@ -61,12 +61,17 @@ export default function VendorDashboardPage() {
   const fetchData = async () => {
     if (!user) return;
 
-    // Fetch vendor profile
-    const { data: vendorData } = await supabase
+    const { data: vendorData, error: vendorError } = await supabase
       .from('vendors')
       .select('id, business_name, status, shortlist_count, subscription_plan')
       .eq('user_id', user.id)
       .maybeSingle();
+
+    if (vendorError) {
+      console.error('Failed to fetch vendor profile:', vendorError);
+      setLoading(false);
+      return;
+    }
 
     if (vendorData) {
       setVendor(vendorData as VendorData);
@@ -81,51 +86,60 @@ export default function VendorDashboardPage() {
   const fetchAnalytics = async (vendorId: string) => {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const thirtyDaysAgo = new Date(now);
+    thirtyDaysAgo.setDate(now.getDate() - 30);
     const startOfWeek = new Date(now);
     startOfWeek.setDate(now.getDate() - 7);
 
-    // Fetch all views
-    const { data: viewsData } = await supabase
-      .from('vendor_views')
-      .select('session_id, viewed_at')
-      .eq('vendor_id', vendorId);
+    const thirtyDaysAgoIso = thirtyDaysAgo.toISOString();
+    const startOfMonthIso = startOfMonth.toISOString();
+    const startOfWeekIso = startOfWeek.toISOString();
 
-    const views = viewsData || [];
-    const uniqueSessions = new Set(views.map(v => v.session_id));
-    const viewsThisMonth = views.filter(v => new Date(v.viewed_at) >= startOfMonth).length;
-    const viewsThisWeek = views.filter(v => new Date(v.viewed_at) >= startOfWeek).length;
+    const [
+      totalViewsRes,
+      monthlyViewsRes,
+      weeklyViewsRes,
+      uniqueViewsRes,
+      totalRequestsRes,
+      requestsThisMonthRes,
+    ] = await Promise.all([
+      supabase.from('vendor_views').select('*', { count: 'exact', head: true }).eq('vendor_id', vendorId),
+      supabase.from('vendor_views').select('*', { count: 'exact', head: true }).eq('vendor_id', vendorId).gte('viewed_at', thirtyDaysAgoIso),
+      supabase.from('vendor_views').select('*', { count: 'exact', head: true }).eq('vendor_id', vendorId).gte('viewed_at', startOfWeekIso),
+      supabase.rpc('count_vendor_unique_visitors', { p_vendor_id: vendorId }),
+      supabase.from('brochure_requests').select('*', { count: 'exact', head: true }).eq('vendor_id', vendorId),
+      supabase.from('brochure_requests').select('*', { count: 'exact', head: true }).eq('vendor_id', vendorId).gte('created_at', startOfMonthIso),
+    ]);
 
-    // Fetch brochure requests
-    const { count: totalRequests } = await supabase
-      .from('brochure_requests')
-      .select('*', { count: 'exact', head: true })
-      .eq('vendor_id', vendorId);
-
-    const { count: requestsThisMonth } = await supabase
-      .from('brochure_requests')
-      .select('*', { count: 'exact', head: true })
-      .eq('vendor_id', vendorId)
-      .gte('created_at', startOfMonth.toISOString());
+    const totalViews = totalViewsRes.error ? 0 : (totalViewsRes.count ?? 0);
+    const viewsThisMonth = monthlyViewsRes.error ? 0 : (monthlyViewsRes.count ?? 0);
+    const viewsThisWeek = weeklyViewsRes.error ? 0 : (weeklyViewsRes.count ?? 0);
+    const uniqueViews = uniqueViewsRes.error ? 0 : (uniqueViewsRes.data ?? 0);
+    const totalRequests = totalRequestsRes.error ? 0 : (totalRequestsRes.count ?? 0);
+    const requestsThisMonth = requestsThisMonthRes.error ? 0 : (requestsThisMonthRes.count ?? 0);
 
     setAnalytics({
-      totalViews: views.length,
-      uniqueViews: uniqueSessions.size,
-      brochureRequests: totalRequests || 0,
+      totalViews,
+      uniqueViews,
+      brochureRequests: totalRequests,
       viewsThisWeek,
       viewsThisMonth,
-      requestsThisMonth: requestsThisMonth || 0,
+      requestsThisMonth,
     });
   };
 
   const fetchRecentLeads = async (vendorId: string) => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('brochure_requests')
       .select('*')
       .eq('vendor_id', vendorId)
       .order('created_at', { ascending: false })
       .limit(5);
 
-    setRecentLeads(data || []);
+    if (error) {
+      console.error('Failed to fetch recent leads:', error);
+    }
+    setRecentLeads(data ?? []);
   };
 
   if (loading) {

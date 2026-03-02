@@ -154,6 +154,7 @@ export default function BookingsPage() {
                           src={vendorImage} 
                           alt={booking.vendor.business_name}
                           className="w-full h-full object-cover"
+                          loading="lazy"
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">

@@ -97,11 +97,9 @@ export default function VendorDetailPage() {
 
   useEffect(() => {
     if (id) {
-      fetchVendor();
-      trackView();
-      if (user) {
-        checkShortlist();
-      }
+      const promises: Promise<void>[] = [fetchVendor(), trackView()];
+      if (user) promises.push(checkShortlist());
+      Promise.all(promises);
     }
   }, [id, user]);
 
@@ -115,11 +113,12 @@ export default function VendorDetailPage() {
       sessionStorage.setItem('lwp_session_id', sessionId);
     }
 
-    await supabase.from('vendor_views').insert({
+    const { error } = await supabase.from('vendor_views').insert({
       vendor_id: id,
       user_id: user?.id || null,
       session_id: sessionId,
     });
+    if (error) console.warn('Failed to track view:', error.message);
   };
 
   const fetchVendor = async () => {
@@ -192,12 +191,16 @@ export default function VendorDetailPage() {
       contactMethod = 'email';
     }
 
-    await supabase.from('brochure_requests').insert({
+    const { error: insertError } = await supabase.from('brochure_requests').insert({
       vendor_id: id,
       user_id: user.id,
       message: message,
       contact_method: contactMethod,
     });
+    if (insertError) {
+      toast({ title: 'Error', description: 'Could not send your request. Please try again.', variant: 'destructive' });
+      return;
+    }
     
     // Build contact links and show dialog
     if (vendor.whatsapp) {
@@ -346,7 +349,7 @@ export default function VendorDetailPage() {
                           selectedImageIndex === idx ? 'border-primary' : 'border-transparent'
                         }`}
                       >
-                        <img src={img} alt="" className="w-full h-full object-cover" />
+                        <img src={img} alt="" className="w-full h-full object-cover" loading="lazy" />
                       </button>
                     ))}
                   </div>
@@ -359,6 +362,7 @@ export default function VendorDetailPage() {
                           src={images[selectedImageIndex]}
                           alt={vendor.business_name}
                           className="w-full h-full object-cover"
+                          loading="lazy"
                         />
                         
                         {/* Navigation */}
